@@ -400,7 +400,7 @@
             <h3 style="margin-bottom: 15px; color: #856404;">Setup Required</h3>
             <p style="margin-bottom: 15px; font-size: 14px;">Please add your Google Apps Script URL to line 750 in the code:</p>
             <code style="background: white; padding: 10px; display: block; border-radius: 5px; font-size: 12px; word-break: break-all;">
-                const API_URL = 'https://script.google.com/macros/s/AKfycbyIy4EJY2qR07P55UdlizbspxEYGDedGlmMXb1KWYOHpyfjjxln4QStP28nGsC4Xxdz/exec';
+                const API_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
             </code>
         </div>
     </div>
@@ -409,11 +409,6 @@
         <div class="header">
             <h1>Invicticus</h1>
             <p>Car Maintenance System</p>
-        </div>
-        
-        <div id="login-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button class="btn btn-secondary" style="flex: 1;" onclick="showLoginTab('login')">Login</button>
-            <button class="btn btn-secondary" style="flex: 1;" onclick="showLoginTab('register')">Register</button>
         </div>
         
         <form id="login-form" onsubmit="handleLogin(event)">
@@ -428,25 +423,6 @@
             </div>
             
             <button type="submit" class="btn" id="login-btn">Login</button>
-        </form>
-        
-        <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
-            <div class="form-group">
-                <label>Email</label>
-                <input type="email" id="register-email" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="register-password" required minlength="6">
-            </div>
-            
-            <div class="form-group">
-                <label>Confirm Password</label>
-                <input type="password" id="register-confirm" required minlength="6">
-            </div>
-            
-            <button type="submit" class="btn" id="register-btn">Create Account</button>
         </form>
         
         <div id="auth-error" class="alert alert-danger hidden" style="margin-top: 15px;"></div>
@@ -470,6 +446,7 @@
             <button class="tab" onclick="showTab('add-car')">Add Vehicle</button>
             <button class="tab" onclick="showTab('maintenance')">Add Maintenance</button>
             <button class="tab" onclick="showTab('settings')">Settings</button>
+            <button class="tab hidden" id="admin-tab" onclick="showTab('admin')">User Management</button>
         </div>
         
         <div id="dashboard" class="tab-content active">
@@ -643,16 +620,51 @@
                 <button class="btn btn-danger btn-small" onclick="handleLogout()">Logout</button>
             </div>
         </div>
+        
+        <div id="admin" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">User Management</h2>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">Create New User</h3>
+                
+                <form onsubmit="createUser(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>User Email</label>
+                            <input type="email" name="userEmail" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>User Password</label>
+                            <input type="password" name="userPassword" required minlength="6">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn">Create User</button>
+                </form>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 15px;">
+                <h3 style="margin-bottom: 15px;">Existing Users</h3>
+                <div id="users-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading users...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         // ==========================================
         // API CONFIGURATION
         // ==========================================
-        const API_URL = 'https://script.google.com/macros/s/AKfycbyIy4EJY2qR07P55UdlizbspxEYGDedGlmMXb1KWYOHpyfjjxln4QStP28nGsC4Xxdz/exec';
+        // REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+        const API_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
         
         // Check if API is configured
-        const isConfigured = API_URL !== 'https://script.google.com/macros/s/AKfycbyIy4EJY2qR07P55UdlizbspxEYGDedGlmMXb1KWYOHpyfjjxln4QStP28nGsC4Xxdz/exec';
+        const isConfigured = API_URL !== 'YOUR_APPS_SCRIPT_URL_HERE';
         
         if (isConfigured) {
             document.getElementById('config-screen').classList.add('hidden');
@@ -663,6 +675,8 @@
         // GLOBAL VARIABLES
         // ==========================================
         let currentUser = null;
+        let isAdmin = false;
+        let adminCredentials = null;
         let vehicles = [];
         let maintenanceRecords = [];
         
@@ -690,17 +704,6 @@
         // ==========================================
         // AUTHENTICATION
         // ==========================================
-        function showLoginTab(tab) {
-            if (tab === 'login') {
-                document.getElementById('login-form').classList.remove('hidden');
-                document.getElementById('register-form').classList.add('hidden');
-            } else {
-                document.getElementById('login-form').classList.add('hidden');
-                document.getElementById('register-form').classList.remove('hidden');
-            }
-            document.getElementById('auth-error').classList.add('hidden');
-        }
-        
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
@@ -714,11 +717,23 @@
             
             if (result.success) {
                 currentUser = result.data.userId;
+                isAdmin = result.data.isAdmin || false;
+                
+                if (isAdmin) {
+                    adminCredentials = { email, password };
+                    document.getElementById('admin-tab').classList.remove('hidden');
+                }
+                
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('current-user').textContent = currentUser;
+                document.getElementById('current-user').textContent = currentUser + (isAdmin ? ' (Admin)' : '');
                 document.getElementById('settings-email').textContent = currentUser;
+                
                 await loadUserData();
+                
+                if (isAdmin) {
+                    await loadUsers();
+                }
             } else {
                 showAuthError(result.message);
                 btn.disabled = false;
@@ -726,42 +741,15 @@
             }
         }
         
-        async function handleRegister(e) {
-            e.preventDefault();
-            const email = document.getElementById('register-email').value;
-            const password = document.getElementById('register-password').value;
-            const confirm = document.getElementById('register-confirm').value;
-            const btn = document.getElementById('register-btn');
-            
-            if (password !== confirm) {
-                showAuthError('Passwords do not match');
-                return;
-            }
-            
-            btn.disabled = true;
-            btn.textContent = 'Creating account...';
-            
-            const result = await callAPI('register', { email, password });
-            
-            if (result.success) {
-                showAlert('Account created! Please login.');
-                showLoginTab('login');
-                document.getElementById('login-email').value = email;
-                btn.disabled = false;
-                btn.textContent = 'Create Account';
-            } else {
-                showAuthError(result.message);
-                btn.disabled = false;
-                btn.textContent = 'Create Account';
-            }
-        }
-        
         function handleLogout() {
             currentUser = null;
+            isAdmin = false;
+            adminCredentials = null;
             vehicles = [];
             maintenanceRecords = [];
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('admin-tab').classList.add('hidden');
             document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';
         }
@@ -773,17 +761,88 @@
         }
         
         // ==========================================
+        // ADMIN USER MANAGEMENT
+        // ==========================================
+        async function createUser(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            
+            const result = await callAPI('createUser', {
+                adminEmail: adminCredentials.email,
+                adminPassword: adminCredentials.password,
+                email: formData.get('userEmail'),
+                password: formData.get('userPassword')
+            });
+            
+            if (result.success) {
+                form.reset();
+                showAlert('User created successfully!');
+                await loadUsers();
+            } else {
+                showAlert('Error: ' + result.message);
+            }
+        }
+        
+        async function loadUsers() {
+            const result = await callAPI('getUsers', {
+                adminEmail: adminCredentials.email,
+                adminPassword: adminCredentials.password
+            });
+            
+            if (result.success) {
+                displayUsers(result.data);
+            }
+        }
+        
+        function displayUsers(users) {
+            const container = document.getElementById('users-list');
+            
+            if (users.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No users created yet.</div>';
+                return;
+            }
+            
+            const html = users.map(user => `
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="font-weight: bold; margin-bottom: 5px;">${user.email}</div>
+                        <div style="font-size: 12px; color: #666;">Created: ${new Date(user.createdAt).toLocaleDateString()}</div>
+                    </div>
+                    <button class="btn btn-danger btn-small" onclick="deleteUser('${user.email}')">Delete User</button>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+        }
+        
+        async function deleteUser(email) {
+            if (confirm(`Are you sure you want to delete user ${email}? All their vehicles and maintenance records will be deleted.`)) {
+                const result = await callAPI('deleteUser', {
+                    adminEmail: adminCredentials.email,
+                    adminPassword: adminCredentials.password,
+                    email
+                });
+                
+                if (result.success) {
+                    showAlert('User deleted successfully!');
+                    await loadUsers();
+                } else {
+                    showAlert('Error: ' + result.message);
+                }
+            }
+        }
+        
+        // ==========================================
         // DATA MANAGEMENT
         // ==========================================
         async function loadUserData() {
             try {
-                // Load vehicles
                 const vehiclesResult = await callAPI('getVehicles', { userId: currentUser });
                 if (vehiclesResult.success) {
                     vehicles = vehiclesResult.data;
                 }
                 
-                // Load maintenance records
                 const maintenanceResult = await callAPI('getMaintenance', { userId: currentUser });
                 if (maintenanceResult.success) {
                     maintenanceRecords = maintenanceResult.data;
@@ -929,7 +988,6 @@
                 const daysSinceService = Math.floor((new Date() - new Date(vehicle.lastServiceDate)) / (1000 * 60 * 60 * 24));
                 const estimatedServiceDate = getEstimatedServiceDate(vehicle);
                 
-                // Get maintenance records for this vehicle
                 const vehicleMaintenance = maintenanceRecords.filter(m => m.vehicleId === vehicle.licensePlate);
                 const maintenanceHtml = vehicleMaintenance.length > 0 ? `
                     <div style="margin-top: 20px;">
