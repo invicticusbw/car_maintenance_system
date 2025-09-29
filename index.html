@@ -400,7 +400,7 @@
             <h3 style="margin-bottom: 15px; color: #856404;">Setup Required</h3>
             <p style="margin-bottom: 15px; font-size: 14px;">Please add your Google Apps Script URL to line 750 in the code:</p>
             <code style="background: white; padding: 10px; display: block; border-radius: 5px; font-size: 12px; word-break: break-all;">
-                const API_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+                const API_URL = 'https://script.google.com/macros/s/AKfycbyIy4EJY2qR07P55UdlizbspxEYGDedGlmMXb1KWYOHpyfjjxln4QStP28nGsC4Xxdz/exec';
             </code>
         </div>
     </div>
@@ -661,10 +661,10 @@
         // API CONFIGURATION
         // ==========================================
         // REPLACE THIS WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const API_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyIy4EJY2qR07P55UdlizbspxEYGDedGlmMXb1KWYOHpyfjjxln4QStP28nGsC4Xxdz/exec';
         
         // Check if API is configured
-        const isConfigured = API_URL !== 'YOUR_APPS_SCRIPT_URL_HERE';
+        const isConfigured = API_URL !== 'https://script.google.com/macros/s/AKfycbyIy4EJY2qR07P55UdlizbspxEYGDedGlmMXb1KWYOHpyfjjxln4QStP28nGsC4Xxdz/exec';
         
         if (isConfigured) {
             document.getElementById('config-screen').classList.add('hidden');
