@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invicticus Car Maintenance System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 50px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .header h1 {
+            font-size: clamp(1.5em, 5vw, 2.5em);
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 5px;
+            gap: 5px;
+            overflow-x: auto;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px 15px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            color: #666;
+            white-space: nowrap;
+        }
+        
+        .tab:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+            width: auto;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #5a6268);
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .alert-info {
+            background: #cce7ff;
+            color: #004085;
+            border: 1px solid #b3d7ff;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .car-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+            transition: transform 0.3s ease;
+        }
+        
+        .car-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .car-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .car-title {
+            font-size: clamp(1.1em, 3vw, 1.3em);
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .car-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-item {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .detail-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .detail-value {
+            font-size: 14px;
+            color: #333;
+            font-weight: 600;
+            word-break: break-word;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status.due-soon {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status.overdue {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.good {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .maintenance-record {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .maintenance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .maintenance-type {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 14px;
+        }
+        
+        .maintenance-date {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                border-radius: 10px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                width: 100%;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .car-details {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+            
+            .btn-group .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="login-screen" class="login-container">
+        <div class="header">
+            <h1>Invicticus</h1>
+            <p>Car Maintenance System</p>
+        </div>
+        
+        <form onsubmit="login(event)">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="login-username" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="login-password" required>
+            </div>
+            
+            <button type="submit" class="btn">Login</button>
+        </form>
+        
+        <div style="margin-top: 20px; text-align: center; color: #666; font-size: 12px;">
+            <p>Default Admin: admin / admin123</p>
+            <p style="margin-top: 5px;">Change password after first login</p>
+        </div>
+    </div>
+
+    <div id="app-screen" class="container hidden">
+        <div class="header">
+            <h1>Invicticus Car Maintenance System</h1>
+            <p>Comprehensive vehicle service and maintenance tracking</p>
+        </div>
+        
+        <div class="user-info">
+            <div>
+                <strong>Logged in as:</strong> <span id="current-user"></span>
+                <span id="user-role" style="margin-left: 10px; padding: 3px 8px; background: #667eea; color: white; border-radius: 5px; font-size: 11px;"></span>
+            </div>
+            <button class="btn btn-small btn-danger" onclick="logout()">Logout</button>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')">Dashboard</button>
+            <button class="tab" onclick="showTab('add-car')">Add Vehicle</button>
+            <button class="tab" onclick="showTab('maintenance')">Add Maintenance</button>
+            <button class="tab" onclick="showTab('settings')">Settings</button>
+            <button class="tab" onclick="showTab('users')" id="users-tab">Users</button>
+            <button class="tab" onclick="showTab('backup')">Backup</button>
+        </div>
+        
+        <div id="dashboard" class="tab-content active">
+            <h2 style="margin-bottom: 20px; color: #333;">Your Vehicles</h2>
+            <div id="vehicles-list">
+                <div class="alert alert-info">
+                    No vehicles added yet. Click "Add Vehicle" to get started!
+                </div>
+            </div>
+        </div>
+        
+        <div id="add-car" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">Add New Vehicle</h2>
+            
+            <form onsubmit="addVehicle(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Make</label>
+                        <input type="text" name="make" required placeholder="e.g., Toyota, Ford">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Model</label>
+                        <input type="text" name="model" required placeholder="e.g., Camry, Focus">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Year</label>
+                        <input type="number" name="year" required min="1900" max="2025" placeholder="2020">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>License Plate</label>
+                        <input type="text" name="licensePlate" placeholder="ABC-123">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Current Kilometers</label>
+                        <input type="number" name="currentKm" required min="0" placeholder="80000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Service Interval (km)</label>
+                        <select name="serviceInterval" required>
+                            <option value="">Select interval</option>
+                            <option value="5000">5,000 km</option>
+                            <option value="8000">8,000 km</option>
+                            <option value="10000">10,000 km</option>
+                            <option value="15000">15,000 km</option>
+                            <option value="20000">20,000 km</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Last Service Date</label>
+                        <input type="date" name="lastServiceDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Kilometers at Last Service</label>
+                        <input type="number" name="lastServiceKm" required min="0" placeholder="72000">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Average Monthly Km</label>
+                        <input type="number" name="avgMonthlyKm" required min="0" placeholder="1500">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Notes (Optional)</label>
+                    <textarea name="notes" rows="3" placeholder="Any additional notes..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn">Add Vehicle</button>
+            </form>
+        </div>
+        
+        <div id="maintenance" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">Add Maintenance Record</h2>
+            
+            <form onsubmit="addMaintenance(event)">
+                <div class="form-group">
+                    <label>Select Vehicle</label>
+                    <select name="vehicleId" id="maintenance-vehicle-select" required>
+                        <option value="">Choose a vehicle...</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Maintenance Type</label>
+                        <select name="maintenanceType" required>
+                            <option value="">Select type...</option>
+                            <option value="oil-change">Oil Change</option>
+                            <option value="tire-rotation">Tire Rotation</option>
+                            <option value="brake-pads">Brake Pads Replacement</option>
+                            <option value="air-filter">Air Filter Replacement</option>
+                            <option value="battery">Battery Replacement</option>
+                            <option value="spark-plugs">Spark Plugs</option>
+                            <option value="transmission">Transmission Service</option>
+                            <option value="coolant">Coolant Flush</option>
+                            <option value="timing-belt">Timing Belt</option>
+                            <option value="suspension">Suspension Work</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Date Performed</label>
+                        <input type="date" name="maintenanceDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Kilometers at Service</label>
+                        <input type="number" name="maintenanceKm" required min="0">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cost</label>
+                        <input type="number" name="cost" step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Next Service Due (km)</label>
+                        <input type="number" name="nextServiceKm" placeholder="Leave blank if not applicable">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Reminder Threshold (km before due)</label>
+                        <input type="number" name="reminderThreshold" value="1000" min="0">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Service Provider</label>
+                    <input type="text" name="serviceProvider" placeholder="e.g., Quick Lube, Main Street Garage">
+                </div>
+                
+                <div class="form-group">
+                    <label>Parts Replaced / Details</label>
+                    <textarea name="details" rows="4" placeholder="List parts replaced, warranty info, or any other details..."></textarea>
+                </div>
+                
+                <button type="submit" class="btn">Add Maintenance Record</button>
+            </form>
+        </div>
+        
+        <div id="settings" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">Settings</h2>
+            
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #2196f3;">
+                <h4 style="margin-bottom: 10px;">Desktop Notifications</h4>
+                <p style="margin-bottom: 15px; font-size: 14px;">Enable popup notifications for maintenance reminders.</p>
+                <button class="btn btn-small" onclick="requestNotificationPermission()">
+                    Enable Notifications
+                </button>
+                <div id="notification-status" style="margin-top: 10px; font-weight: bold; font-size: 12px;"></div>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">Change Password</h3>
+                
+                <form onsubmit="changePassword(event)">
+                    <div class="form-group">
+                        <label>Current Password</label>
+                        <input type="password" name="currentPassword" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" name="newPassword" required minlength="6">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Confirm New Password</label>
+                        <input type="password" name="confirmPassword" required minlength="6">
+                    </div>
+                    
+                    <button type="submit" class="btn">Change Password</button>
+                </form>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px;">
+                <h3 style="margin-bottom: 15px;">General Settings</h3>
+                
+                <form onsubmit="saveSettings(event)">
+                    <div class="form-group">
+                        <label>Default Service Reminder Threshold (km)</label>
+                        <select id="reminder-threshold" name="reminderThreshold">
+                            <option value="500">500 km</option>
+                            <option value="1000" selected>1000 km</option>
+                            <option value="1500">1500 km</option>
+                            <option value="2000">2000 km</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn">Save Settings</button>
+                </form>
+            </div>
+        </div>
+        
+        <div id="users" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">User Management</h2>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">Add New User</h3>
+                
+                <form onsubmit="addUser(event)">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" name="username" required minlength="3">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" name="password" required minlength="6">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Role</label>
+                            <select name="role" required>
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn">Add User</button>
+                </form>
+            </div>
+            
+            <div style="background: white; padding: 20px; border-radius: 15px;">
+                <h3 style="margin-bottom: 15px;">Existing Users</h3>
+                <div id="users-list"></div>
+            </div>
+        </div>
+        
+        <div id="backup" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #333;">Backup & Restore</h2>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">Export Data</h3>
+                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Download a backup file containing all vehicles and maintenance records.</p>
+                
+                <button class="btn" onclick="exportData()">Download Backup File</button>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                <h3 style="margin-bottom: 15px;">Import Data</h3>
+                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Upload a previously saved backup file.</p>
+                
+                <div class="form-group">
+                    <label>Select Backup File</label>
+                    <input type="file" accept=".json" onchange="importData(event)">
+                </div>
+                
+                <div class="alert" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; font-size: 12px;">
+                    <strong>Warning:</strong> Importing will replace all current data!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let users = JSON.parse(localStorage.getItem('users') || '[{"username":"admin","password":"admin123","role":"admin"}]');
+        let vehicles = [];
+        let maintenanceRecords = [];
+        let settings = {reminderThreshold: 1000};
+
+        function login(event) {
+            event.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            
+            const user = users.find(u => u.username === username && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                document.getElementById('current-user').textContent = user.username;
+                document.getElementById('user-role').textContent = user.role.toUpperCase();
+                
+                if (user.role !== 'admin') {
+                    document.getElementById('users-tab').classList.add('hidden');
+                }
+                
+                loadUserData();
+                displayVehicles();
+                updateNotificationStatus();
+            } else {
+                showAlert('Invalid username or password');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+        }
+
+        function loadUserData() {
+            const userKey = `vehicles_${currentUser.username}`;
+            const maintKey = `maintenance_${currentUser.username}`;
+            const settKey = `settings_${currentUser.username}`;
+            
+            vehicles = JSON.parse(localStorage.getItem(userKey) || '[]');
+            maintenanceRecords = JSON.parse(localStorage.getItem(maintKey) || '[]');
+            settings = JSON.parse(localStorage.getItem(settKey) || '{"reminderThreshold": 1000}');
+        }
+
+        function saveUserData() {
+            const userKey = `vehicles_${currentUser.username}`;
+            const maintKey = `maintenance_${currentUser.username}`;
+            
+            localStorage.setItem(userKey, JSON.stringify(vehicles));
+            localStorage.setItem(maintKey, JSON.stringify(maintenanceRecords));
+        }
+
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'dashboard') {
+                displayVehicles();
+            } else if (tabName === 'maintenance') {
+                populateVehicleSelect();
+            } else if (tabName === 'users') {
+                displayUsers();
+            }
+        }
+
+        function addVehicle(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const vehicle = {
+                id: Date.now(),
+                make: formData.get('make'),
+                model: formData.get('model'),
+                year: parseInt(formData.get('year')),
+                licensePlate: formData.get('licensePlate'),
+                currentKm: parseInt(formData.get('currentKm')),
+                serviceInterval: parseInt(formData.get('serviceInterval')),
+                lastServiceDate: formData.get('lastServiceDate'),
+                lastServiceKm: parseInt(formData.get('lastServiceKm')),
+                avgMonthlyKm: parseInt(formData.get('avgMonthlyKm')),
+                notes: formData.get('notes')
+            };
+            
+            vehicles.push(vehicle);
+            saveUserData();
+            
+            form.reset();
+            showAlert('Vehicle added successfully!');
+            showTab('dashboard');
+        }
+
+        function addMaintenance(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            const maintenance = {
+                id: Date.now(),
+                vehicleId: parseInt(formData.get('vehicleId')),
+                type: formData.get('maintenanceType'),
+                date: formData.get('maintenanceDate'),
+                km: parseInt(formData.get('maintenanceKm')),
+                cost: parseFloat(formData.get('cost')) || 0,
+                nextServiceKm: formData.get('nextServiceKm') ? parseInt(formData.get('nextServiceKm')) : null,
+                reminderThreshold: parseInt(formData.get('reminderThreshold')),
+                serviceProvider: formData.get('serviceProvider'),
+                details: formData.get('details')
+            };
+            
+            maintenanceRecords.push(maintenance);
+            saveUserData();
+            
+            form.reset
