@@ -49,6 +49,15 @@
             background: linear-gradient(45deg, #667eea, #764ba2);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .config-notice {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
         }
         
         .user-info {
@@ -158,9 +167,14 @@
             width: 100%;
         }
         
-        .btn:hover {
+        .btn:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
         
         .btn-small {
@@ -195,6 +209,12 @@
             background: #d4edda;
             color: #155724;
             border: 1px solid #c3e6cb;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
         }
         
         .car-card {
@@ -316,6 +336,27 @@
             display: none !important;
         }
         
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -349,30 +390,66 @@
     </style>
 </head>
 <body>
-    <div id="login-screen" class="login-container">
+    <div id="config-screen" class="login-container">
         <div class="header">
             <h1>Invicticus</h1>
             <p>Car Maintenance System</p>
         </div>
         
-        <form onsubmit="login(event)">
+        <div class="config-notice">
+            <h3 style="margin-bottom: 15px; color: #856404;">Setup Required</h3>
+            <p style="margin-bottom: 15px; font-size: 14px;">Please add your Google Apps Script URL to line 750 in the code:</p>
+            <code style="background: white; padding: 10px; display: block; border-radius: 5px; font-size: 12px; word-break: break-all;">
+                const API_URL = 'https://script.google.com/macros/s/AKfycbyIy4EJY2qR07P55UdlizbspxEYGDedGlmMXb1KWYOHpyfjjxln4QStP28nGsC4Xxdz/exec';
+            </code>
+        </div>
+    </div>
+
+    <div id="login-screen" class="login-container hidden">
+        <div class="header">
+            <h1>Invicticus</h1>
+            <p>Car Maintenance System</p>
+        </div>
+        
+        <div id="login-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn btn-secondary" style="flex: 1;" onclick="showLoginTab('login')">Login</button>
+            <button class="btn btn-secondary" style="flex: 1;" onclick="showLoginTab('register')">Register</button>
+        </div>
+        
+        <form id="login-form" onsubmit="handleLogin(event)">
             <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="login-username" required>
+                <label>Email</label>
+                <input type="email" id="login-email" required>
             </div>
             
             <div class="form-group">
                 <label>Password</label>
-                <input type="password" id="login-password" required>
+                <input type="password" id="login-password" required minlength="6">
             </div>
             
-            <button type="submit" class="btn">Login</button>
+            <button type="submit" class="btn" id="login-btn">Login</button>
         </form>
         
-        <div style="margin-top: 20px; text-align: center; color: #666; font-size: 12px;">
-            <p>Default Admin: admin / admin123</p>
-            <p style="margin-top: 5px;">Change password after first login</p>
-        </div>
+        <form id="register-form" class="hidden" onsubmit="handleRegister(event)">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" id="register-email" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="register-password" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label>Confirm Password</label>
+                <input type="password" id="register-confirm" required minlength="6">
+            </div>
+            
+            <button type="submit" class="btn" id="register-btn">Create Account</button>
+        </form>
+        
+        <div id="auth-error" class="alert alert-danger hidden" style="margin-top: 15px;"></div>
     </div>
 
     <div id="app-screen" class="container hidden">
@@ -384,9 +461,8 @@
         <div class="user-info">
             <div>
                 <strong>Logged in as:</strong> <span id="current-user"></span>
-                <span id="user-role" style="margin-left: 10px; padding: 3px 8px; background: #667eea; color: white; border-radius: 5px; font-size: 11px;"></span>
             </div>
-            <button class="btn btn-small btn-danger" onclick="logout()">Logout</button>
+            <button class="btn btn-small btn-danger" onclick="handleLogout()">Logout</button>
         </div>
         
         <div class="tabs">
@@ -394,15 +470,14 @@
             <button class="tab" onclick="showTab('add-car')">Add Vehicle</button>
             <button class="tab" onclick="showTab('maintenance')">Add Maintenance</button>
             <button class="tab" onclick="showTab('settings')">Settings</button>
-            <button class="tab" onclick="showTab('users')" id="users-tab">Users</button>
-            <button class="tab" onclick="showTab('backup')">Backup</button>
         </div>
         
         <div id="dashboard" class="tab-content active">
             <h2 style="margin-bottom: 20px; color: #333;">Your Vehicles</h2>
             <div id="vehicles-list">
-                <div class="alert alert-info">
-                    No vehicles added yet. Click "Add Vehicle" to get started!
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Loading vehicles...</p>
                 </div>
             </div>
         </div>
@@ -424,14 +499,14 @@
                     
                     <div class="form-group">
                         <label>Year</label>
-                        <input type="number" name="year" required min="1900" max="2025" placeholder="2020">
+                        <input type="number" name="year" required min="1900" max="2026" placeholder="2020">
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
                         <label>License Plate</label>
-                        <input type="text" name="licensePlate" placeholder="ABC-123">
+                        <input type="text" name="licensePlate" required placeholder="ABC-123">
                     </div>
                     
                     <div class="form-group">
@@ -562,197 +637,173 @@
                 <div id="notification-status" style="margin-top: 10px; font-weight: bold; font-size: 12px;"></div>
             </div>
             
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                <h3 style="margin-bottom: 15px;">Change Password</h3>
-                
-                <form onsubmit="changePassword(event)">
-                    <div class="form-group">
-                        <label>Current Password</label>
-                        <input type="password" name="currentPassword" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>New Password</label>
-                        <input type="password" name="newPassword" required minlength="6">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Confirm New Password</label>
-                        <input type="password" name="confirmPassword" required minlength="6">
-                    </div>
-                    
-                    <button type="submit" class="btn">Change Password</button>
-                </form>
-            </div>
-            
             <div style="background: #f8f9fa; padding: 20px; border-radius: 15px;">
-                <h3 style="margin-bottom: 15px;">General Settings</h3>
-                
-                <form onsubmit="saveSettings(event)">
-                    <div class="form-group">
-                        <label>Default Service Reminder Threshold (km)</label>
-                        <select id="reminder-threshold" name="reminderThreshold">
-                            <option value="500">500 km</option>
-                            <option value="1000" selected>1000 km</option>
-                            <option value="1500">1500 km</option>
-                            <option value="2000">2000 km</option>
-                        </select>
-                    </div>
-                    
-                    <button type="submit" class="btn">Save Settings</button>
-                </form>
-            </div>
-        </div>
-        
-        <div id="users" class="tab-content">
-            <h2 style="margin-bottom: 20px; color: #333;">User Management</h2>
-            
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                <h3 style="margin-bottom: 15px;">Add New User</h3>
-                
-                <form onsubmit="addUser(event)">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Username</label>
-                            <input type="text" name="username" required minlength="3">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Password</label>
-                            <input type="password" name="password" required minlength="6">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Role</label>
-                            <select name="role" required>
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="btn">Add User</button>
-                </form>
-            </div>
-            
-            <div style="background: white; padding: 20px; border-radius: 15px;">
-                <h3 style="margin-bottom: 15px;">Existing Users</h3>
-                <div id="users-list"></div>
-            </div>
-        </div>
-        
-        <div id="backup" class="tab-content">
-            <h2 style="margin-bottom: 20px; color: #333;">Backup & Restore</h2>
-            
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                <h3 style="margin-bottom: 15px;">Export Data</h3>
-                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Download a backup file containing all vehicles and maintenance records.</p>
-                
-                <button class="btn" onclick="exportData()">Download Backup File</button>
-            </div>
-            
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
-                <h3 style="margin-bottom: 15px;">Import Data</h3>
-                <p style="margin-bottom: 15px; color: #666; font-size: 14px;">Upload a previously saved backup file.</p>
-                
-                <div class="form-group">
-                    <label>Select Backup File</label>
-                    <input type="file" accept=".json" onchange="importData(event)">
-                </div>
-                
-                <div class="alert" style="background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; font-size: 12px;">
-                    <strong>Warning:</strong> Importing will replace all current data!
-                </div>
+                <h3 style="margin-bottom: 15px;">Account</h3>
+                <p style="margin-bottom: 10px;"><strong>Email:</strong> <span id="settings-email"></span></p>
+                <button class="btn btn-danger btn-small" onclick="handleLogout()">Logout</button>
             </div>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // API CONFIGURATION
+        // ==========================================
+        const API_URL = 'https://script.google.com/macros/s/AKfycbyIy4EJY2qR07P55UdlizbspxEYGDedGlmMXb1KWYOHpyfjjxln4QStP28nGsC4Xxdz/exec';
+        
+        // Check if API is configured
+        const isConfigured = API_URL !== 'https://script.google.com/macros/s/AKfycbyIy4EJY2qR07P55UdlizbspxEYGDedGlmMXb1KWYOHpyfjjxln4QStP28nGsC4Xxdz/exec';
+        
+        if (isConfigured) {
+            document.getElementById('config-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+        }
+        
+        // ==========================================
+        // GLOBAL VARIABLES
+        // ==========================================
         let currentUser = null;
-        let users = JSON.parse(localStorage.getItem('users') || '[{"username":"admin","password":"admin123","role":"admin"}]');
         let vehicles = [];
         let maintenanceRecords = [];
-        let settings = {reminderThreshold: 1000};
-
-        function login(event) {
-            event.preventDefault();
-            const username = document.getElementById('login-username').value;
+        
+        // ==========================================
+        // API FUNCTIONS
+        // ==========================================
+        async function callAPI(action, data = {}) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action, ...data }),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('API Error:', error);
+                return { success: false, message: 'Network error. Please try again.' };
+            }
+        }
+        
+        // ==========================================
+        // AUTHENTICATION
+        // ==========================================
+        function showLoginTab(tab) {
+            if (tab === 'login') {
+                document.getElementById('login-form').classList.remove('hidden');
+                document.getElementById('register-form').classList.add('hidden');
+            } else {
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('register-form').classList.remove('hidden');
+            }
+            document.getElementById('auth-error').classList.add('hidden');
+        }
+        
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+            const btn = document.getElementById('login-btn');
             
-            const user = users.find(u => u.username === username && u.password === password);
+            btn.disabled = true;
+            btn.textContent = 'Logging in...';
             
-            if (user) {
-                currentUser = user;
+            const result = await callAPI('login', { email, password });
+            
+            if (result.success) {
+                currentUser = result.data.userId;
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('app-screen').classList.remove('hidden');
-                document.getElementById('current-user').textContent = user.username;
-                document.getElementById('user-role').textContent = user.role.toUpperCase();
-                
-                if (user.role !== 'admin') {
-                    document.getElementById('users-tab').classList.add('hidden');
-                }
-                
-                loadUserData();
-                displayVehicles();
-                updateNotificationStatus();
+                document.getElementById('current-user').textContent = currentUser;
+                document.getElementById('settings-email').textContent = currentUser;
+                await loadUserData();
             } else {
-                showAlert('Invalid username or password');
+                showAuthError(result.message);
+                btn.disabled = false;
+                btn.textContent = 'Login';
             }
         }
-
-        function logout() {
+        
+        async function handleRegister(e) {
+            e.preventDefault();
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+            const btn = document.getElementById('register-btn');
+            
+            if (password !== confirm) {
+                showAuthError('Passwords do not match');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = 'Creating account...';
+            
+            const result = await callAPI('register', { email, password });
+            
+            if (result.success) {
+                showAlert('Account created! Please login.');
+                showLoginTab('login');
+                document.getElementById('login-email').value = email;
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            } else {
+                showAuthError(result.message);
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
+        }
+        
+        function handleLogout() {
             currentUser = null;
+            vehicles = [];
+            maintenanceRecords = [];
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('app-screen').classList.add('hidden');
-            document.getElementById('login-username').value = '';
+            document.getElementById('login-email').value = '';
             document.getElementById('login-password').value = '';
         }
-
-        function loadUserData() {
-            const userKey = `vehicles_${currentUser.username}`;
-            const maintKey = `maintenance_${currentUser.username}`;
-            const settKey = `settings_${currentUser.username}`;
-            
-            vehicles = JSON.parse(localStorage.getItem(userKey) || '[]');
-            maintenanceRecords = JSON.parse(localStorage.getItem(maintKey) || '[]');
-            settings = JSON.parse(localStorage.getItem(settKey) || '{"reminderThreshold": 1000}');
+        
+        function showAuthError(message) {
+            const errorDiv = document.getElementById('auth-error');
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('hidden');
         }
-
-        function saveUserData() {
-            const userKey = `vehicles_${currentUser.username}`;
-            const maintKey = `maintenance_${currentUser.username}`;
-            
-            localStorage.setItem(userKey, JSON.stringify(vehicles));
-            localStorage.setItem(maintKey, JSON.stringify(maintenanceRecords));
-        }
-
-        function showTab(tabName) {
-            const tabs = document.querySelectorAll('.tab-content');
-            const buttons = document.querySelectorAll('.tab');
-            
-            tabs.forEach(tab => tab.classList.remove('active'));
-            buttons.forEach(btn => btn.classList.remove('active'));
-            
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-            
-            if (tabName === 'dashboard') {
+        
+        // ==========================================
+        // DATA MANAGEMENT
+        // ==========================================
+        async function loadUserData() {
+            try {
+                // Load vehicles
+                const vehiclesResult = await callAPI('getVehicles', { userId: currentUser });
+                if (vehiclesResult.success) {
+                    vehicles = vehiclesResult.data;
+                }
+                
+                // Load maintenance records
+                const maintenanceResult = await callAPI('getMaintenance', { userId: currentUser });
+                if (maintenanceResult.success) {
+                    maintenanceRecords = maintenanceResult.data;
+                }
+                
                 displayVehicles();
-            } else if (tabName === 'maintenance') {
-                populateVehicleSelect();
-            } else if (tabName === 'users') {
-                displayUsers();
+                updateNotificationStatus();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showAlert('Error loading data');
             }
         }
-
-        function addVehicle(event) {
-            event.preventDefault();
-            
-            const form = event.target;
+        
+        async function addVehicle(e) {
+            e.preventDefault();
+            const form = e.target;
             const formData = new FormData(form);
             
-            const vehicle = {
-                id: Date.now(),
+            const vehicleData = {
+                userId: currentUser,
                 make: formData.get('make'),
                 model: formData.get('model'),
                 year: parseInt(formData.get('year')),
@@ -765,23 +816,26 @@
                 notes: formData.get('notes')
             };
             
-            vehicles.push(vehicle);
-            saveUserData();
+            const result = await callAPI('addVehicle', vehicleData);
             
-            form.reset();
-            showAlert('Vehicle added successfully!');
-            showTab('dashboard');
+            if (result.success) {
+                form.reset();
+                showAlert('Vehicle added successfully!');
+                await loadUserData();
+                showTab('dashboard');
+            } else {
+                showAlert('Error: ' + result.message);
+            }
         }
-
-        function addMaintenance(event) {
-            event.preventDefault();
-            
-            const form = event.target;
+        
+        async function addMaintenance(e) {
+            e.preventDefault();
+            const form = e.target;
             const formData = new FormData(form);
             
-            const maintenance = {
-                id: Date.now(),
-                vehicleId: parseInt(formData.get('vehicleId')),
+            const maintenanceData = {
+                userId: currentUser,
+                vehicleId: formData.get('vehicleId'),
                 type: formData.get('maintenanceType'),
                 date: formData.get('maintenanceDate'),
                 km: parseInt(formData.get('maintenanceKm')),
@@ -792,7 +846,344 @@
                 details: formData.get('details')
             };
             
-            maintenanceRecords.push(maintenance);
-            saveUserData();
+            const result = await callAPI('addMaintenance', maintenanceData);
             
-            form.reset
+            if (result.success) {
+                form.reset();
+                showAlert('Maintenance record added successfully!');
+                await loadUserData();
+            } else {
+                showAlert('Error: ' + result.message);
+            }
+        }
+        
+        async function updateKilometers(licensePlate, make, model) {
+            const newKm = prompt('Enter current kilometers:');
+            if (newKm && !isNaN(newKm)) {
+                const result = await callAPI('updateVehicle', {
+                    userId: currentUser,
+                    make,
+                    model,
+                    licensePlate,
+                    currentKm: parseInt(newKm)
+                });
+                
+                if (result.success) {
+                    showAlert('Kilometers updated successfully!');
+                    await loadUserData();
+                } else {
+                    showAlert('Error: ' + result.message);
+                }
+            }
+        }
+        
+        async function deleteVehicle(licensePlate, make, model) {
+            if (confirm('Are you sure you want to delete this vehicle? All maintenance records will also be deleted.')) {
+                const result = await callAPI('deleteVehicle', {
+                    userId: currentUser,
+                    make,
+                    model,
+                    licensePlate
+                });
+                
+                if (result.success) {
+                    showAlert('Vehicle deleted successfully!');
+                    await loadUserData();
+                } else {
+                    showAlert('Error: ' + result.message);
+                }
+            }
+        }
+        
+        async function deleteMaintenance(vehicleId) {
+            if (confirm('Are you sure you want to delete this maintenance record?')) {
+                const result = await callAPI('deleteMaintenance', {
+                    userId: currentUser,
+                    vehicleId
+                });
+                
+                if (result.success) {
+                    showAlert('Maintenance record deleted!');
+                    await loadUserData();
+                } else {
+                    showAlert('Error: ' + result.message);
+                }
+            }
+        }
+        
+        // ==========================================
+        // DISPLAY FUNCTIONS
+        // ==========================================
+        function displayVehicles() {
+            const container = document.getElementById('vehicles-list');
+            
+            if (vehicles.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No vehicles added yet. Click "Add Vehicle" to get started!</div>';
+                return;
+            }
+            
+            const html = vehicles.map(vehicle => {
+                const serviceStatus = getServiceStatus(vehicle);
+                const nextServiceKm = vehicle.lastServiceKm + vehicle.serviceInterval;
+                const kmUntilService = nextServiceKm - vehicle.currentKm;
+                const daysSinceService = Math.floor((new Date() - new Date(vehicle.lastServiceDate)) / (1000 * 60 * 60 * 24));
+                const estimatedServiceDate = getEstimatedServiceDate(vehicle);
+                
+                // Get maintenance records for this vehicle
+                const vehicleMaintenance = maintenanceRecords.filter(m => m.vehicleId === vehicle.licensePlate);
+                const maintenanceHtml = vehicleMaintenance.length > 0 ? `
+                    <div style="margin-top: 20px;">
+                        <h4 style="margin-bottom: 10px; color: #333;">Maintenance History</h4>
+                        ${vehicleMaintenance.map(m => `
+                            <div class="maintenance-record">
+                                <div class="maintenance-header">
+                                    <div>
+                                        <div class="maintenance-type">${formatMaintenanceType(m.type)}</div>
+                                        <div class="maintenance-date">${new Date(m.date).toLocaleDateString()} - ${m.km.toLocaleString()} km</div>
+                                    </div>
+                                    <button class="btn btn-danger btn-small" onclick="deleteMaintenance('${m.vehicleId}')">Delete</button>
+                                </div>
+                                ${m.cost > 0 ? `<div style="font-size: 13px; margin-top: 5px;"><strong>Cost:</strong> ${m.cost.toFixed(2)}</div>` : ''}
+                                ${m.serviceProvider ? `<div style="font-size: 13px;"><strong>Provider:</strong> ${m.serviceProvider}</div>` : ''}
+                                ${m.details ? `<div style="font-size: 13px; margin-top: 5px;">${m.details}</div>` : ''}
+                                ${m.nextServiceKm ? `<div style="font-size: 13px; margin-top: 5px; color: #667eea;"><strong>Next service due:</strong> ${m.nextServiceKm.toLocaleString()} km</div>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                ` : '';
+                
+                return `
+                    <div class="car-card">
+                        <div class="car-header">
+                            <div class="car-title">${vehicle.year} ${vehicle.make} ${vehicle.model}</div>
+                            <div>
+                                <span class="status ${serviceStatus.class}">${serviceStatus.text}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="car-details">
+                            <div class="detail-item">
+                                <div class="detail-label">License Plate</div>
+                                <div class="detail-value">${vehicle.licensePlate || 'N/A'}</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">Current Kilometers</div>
+                                <div class="detail-value">${vehicle.currentKm.toLocaleString()} km</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">Service Interval</div>
+                                <div class="detail-value">${vehicle.serviceInterval.toLocaleString()} km</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">Last Service</div>
+                                <div class="detail-value">${new Date(vehicle.lastServiceDate).toLocaleDateString()} (${daysSinceService} days ago)</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">Next Service Due</div>
+                                <div class="detail-value">${nextServiceKm.toLocaleString()} km</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">Kilometers Until Service</div>
+                                <div class="detail-value">${kmUntilService > 0 ? kmUntilService.toLocaleString() + ' km' : '<span style="color: #dc3545;">OVERDUE</span>'}</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">Estimated Service Date</div>
+                                <div class="detail-value">${estimatedServiceDate}</div>
+                            </div>
+                            
+                            <div class="detail-item">
+                                <div class="detail-label">Monthly Average</div>
+                                <div class="detail-value">${vehicle.avgMonthlyKm ? vehicle.avgMonthlyKm.toLocaleString() + ' km/month' : 'Not set'}</div>
+                            </div>
+                        </div>
+                        
+                        ${vehicle.notes ? `<div style="margin-top: 10px; font-size: 14px;"><strong>Notes:</strong> ${vehicle.notes}</div>` : ''}
+                        
+                        ${maintenanceHtml}
+                        
+                        <div class="btn-group">
+                            <button class="btn btn-small" onclick="updateKilometers('${vehicle.licensePlate}', '${vehicle.make}', '${vehicle.model}')">Update Kilometers</button>
+                            <button class="btn btn-small btn-danger" onclick="deleteVehicle('${vehicle.licensePlate}', '${vehicle.make}', '${vehicle.model}')">Delete Vehicle</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+            checkServiceReminders();
+        }
+        
+        function populateVehicleSelect() {
+            const select = document.getElementById('maintenance-vehicle-select');
+            select.innerHTML = '<option value="">Choose a vehicle...</option>';
+            
+            vehicles.forEach(vehicle => {
+                const option = document.createElement('option');
+                option.value = vehicle.licensePlate;
+                option.textContent = `${vehicle.year} ${vehicle.make} ${vehicle.model} (${vehicle.licensePlate})`;
+                select.appendChild(option);
+            });
+        }
+        
+        function formatMaintenanceType(type) {
+            return type.split('-').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+        
+        function getServiceStatus(vehicle) {
+            const nextServiceKm = vehicle.lastServiceKm + vehicle.serviceInterval;
+            const kmUntilService = nextServiceKm - vehicle.currentKm;
+            
+            if (kmUntilService <= 0) {
+                return { class: 'overdue', text: 'Service Overdue' };
+            } else if (kmUntilService <= 1000) {
+                return { class: 'due-soon', text: 'Service Due Soon' };
+            } else {
+                return { class: 'good', text: 'Service Up to Date' };
+            }
+        }
+        
+        function getEstimatedServiceDate(vehicle) {
+            if (!vehicle.avgMonthlyKm || vehicle.avgMonthlyKm <= 0) {
+                return 'Set monthly average';
+            }
+            
+            const nextServiceKm = vehicle.lastServiceKm + vehicle.serviceInterval;
+            const kmUntilService = nextServiceKm - vehicle.currentKm;
+            
+            if (kmUntilService <= 0) {
+                return 'Overdue now';
+            }
+            
+            const monthsUntilService = kmUntilService / vehicle.avgMonthlyKm;
+            const daysUntilService = monthsUntilService * 30;
+            
+            const estimatedDate = new Date();
+            estimatedDate.setDate(estimatedDate.getDate() + Math.round(daysUntilService));
+            
+            return estimatedDate.toLocaleDateString() + ` (in ${Math.round(daysUntilService)} days)`;
+        }
+        
+        // ==========================================
+        // NOTIFICATIONS
+        // ==========================================
+        function checkServiceReminders() {
+            if (!("Notification" in window) || Notification.permission !== "granted") {
+                return;
+            }
+            
+            vehicles.forEach(vehicle => {
+                const nextServiceKm = vehicle.lastServiceKm + vehicle.serviceInterval;
+                const kmUntilService = nextServiceKm - vehicle.currentKm;
+                
+                if (kmUntilService <= 0) {
+                    showNotification('Service Overdue', 
+                        `Your ${vehicle.year} ${vehicle.make} ${vehicle.model} needs service now!`);
+                } else if (kmUntilService <= 1000) {
+                    showNotification('Service Due Soon', 
+                        `Your ${vehicle.year} ${vehicle.make} ${vehicle.model} needs service in ${kmUntilService} km.`);
+                }
+            });
+        }
+        
+        function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                alert("This browser does not support notifications");
+                return;
+            }
+            
+            Notification.requestPermission().then(permission => {
+                updateNotificationStatus();
+                if (permission === "granted") {
+                    showNotification("Notifications Enabled", "You'll now receive maintenance reminders.");
+                }
+            });
+        }
+        
+        function updateNotificationStatus() {
+            const statusElement = document.getElementById('notification-status');
+            
+            if (!("Notification" in window)) {
+                statusElement.textContent = "Browser doesn't support notifications";
+                statusElement.style.color = '#dc3545';
+                return;
+            }
+            
+            switch(Notification.permission) {
+                case 'granted':
+                    statusElement.textContent = "Notifications enabled";
+                    statusElement.style.color = '#28a745';
+                    break;
+                case 'denied':
+                    statusElement.textContent = "Notifications blocked";
+                    statusElement.style.color = '#dc3545';
+                    break;
+                default:
+                    statusElement.textContent = "Click button to enable notifications";
+                    statusElement.style.color = '#ffc107';
+            }
+        }
+        
+        function showNotification(title, body) {
+            if (!("Notification" in window)) {
+                return;
+            }
+            
+            if (Notification.permission === "granted") {
+                new Notification(title, {
+                    body: body,
+                    requireInteraction: false
+                });
+            }
+        }
+        
+        // ==========================================
+        // TAB NAVIGATION
+        // ==========================================
+        function showTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            buttons.forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'maintenance') {
+                populateVehicleSelect();
+            }
+        }
+        
+        // ==========================================
+        // UTILITY FUNCTIONS
+        // ==========================================
+        function showAlert(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert alert-success';
+            alert.textContent = message;
+            
+            const container = document.querySelector('.container');
+            if (container) {
+                container.insertBefore(alert, container.firstChild);
+                setTimeout(() => alert.remove(), 3000);
+            }
+        }
+        
+        // ==========================================
+        // INITIALIZATION
+        // ==========================================
+        if (isConfigured) {
+            updateNotificationStatus();
+            setInterval(checkServiceReminders, 5 * 60 * 1000);
+        }
+    </script>
+</body>
+</html>
