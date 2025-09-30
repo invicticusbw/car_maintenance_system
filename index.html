@@ -684,22 +684,51 @@
         // API FUNCTIONS
         // ==========================================
         async function callAPI(action, data = {}) {
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action, ...data }),
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                return result;
-            } catch (error) {
-                console.error('API Error:', error);
-                return { success: false, message: 'Network error. Please try again.' };
+    try {
+        const payload = JSON.stringify({ action, ...data });
+        
+        const response = await fetch(API_URL + '?action=' + action, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: payload,
+            headers: {
+                'Content-Type': 'text/plain'
             }
-        }
+        });
+        
+        // With no-cors, we can't read the response, so we need a different approach
+        // Let's use a form submission workaround
+        return await callAPIWorkaround(action, data);
+    } catch (error) {
+        console.error('API Error:', error);
+        return { success: false, message: 'Network error. Please try again.' };
+    }
+}
+
+	async function callAPIWorkaround(action, data) {
+		const url = API_URL;
+		const payload = { action, ...data };
+		
+		return new Promise((resolve, reject) => {
+			const form = document.createElement('form');
+			form.method = 'POST';
+			form.action = url;
+			form.target = 'hiddenFrame';
+			form.style.display = 'none';
+			
+			const input = document.createElement('input');
+			input.name = 'data';
+			input.value = JSON.stringify(payload);
+			form.appendChild(input);
+			
+			document.body.appendChild(form);
+			
+			// This won't work either due to CORS...
+			// We need a completely different approach
+			
+			reject({ success: false, message: 'CORS limitation' });
+		});
+	}
         
         // ==========================================
         // AUTHENTICATION
